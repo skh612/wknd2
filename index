@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Saturday Exam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #efe6d8;
+    --muted: #a9b4ad;
+    --amber: #e8b064;
+    --amber-soft: rgba(232, 176, 100, 0.16);
+    --glass: rgba(16, 24, 25, 0.68);
+    --line: rgba(239, 230, 216, 0.14);
+    --good: #9fd4a8;
+    --bad: #e8857a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: #0f1617;
+    overflow-x: hidden;
+  }
+
+  /* ---------- Scene ---------- */
+  .scene { position: fixed; inset: 0; z-index: 0; }
+  .scene svg { width: 100%; height: 100%; display: block; }
+  #rain { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+  .fog { animation: drift 40s linear infinite alternate; }
+  .fog.slow { animation-duration: 70s; }
+  @keyframes drift { from { transform: translateX(-60px); } to { transform: translateX(60px); } }
+  .flicker { animation: flicker 3.2s infinite; }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; } 42% { opacity: .82; } 45% { opacity: .95; }
+    60% { opacity: .78; } 63% { opacity: 1; }
+  }
+
+  /* ---------- Card ---------- */
+  .wrap {
+    position: relative; z-index: 2;
+    min-height: 100%;
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: 7vh 16px 40vh;
+  }
+  .card {
+    width: 100%; max-width: 480px;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 30px 26px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  }
+  h1 {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-weight: 600; font-size: 2.4rem; line-height: 1.1;
+    margin: 0 0 14px; color: var(--ink);
+  }
+  .intro { color: #d9d2c5; line-height: 1.7; margin: 0 0 24px; font-size: 1rem; }
+  .intro strong { color: var(--amber); font-weight: 600; }
+  .eyebrow {
+    font-size: .75rem; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 10px;
+  }
+
+  .progress-wrap { height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; margin-bottom: 18px; }
+  .progress { height: 100%; width: 0; background: var(--amber); transition: width .4s; }
+  .count { font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .question {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 1.6rem; font-weight: 600; line-height: 1.25; margin: 0 0 20px;
+  }
+  .option {
+    display: flex; gap: 12px; align-items: center;
+    width: 100%; text-align: left;
+    padding: 14px 16px; margin-bottom: 10px;
+    font: inherit; font-size: 1rem; color: var(--ink);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line); border-radius: 14px;
+    cursor: pointer; transition: border-color .2s, background .2s;
+  }
+  .option:hover { border-color: rgba(232,176,100,.5); }
+  .option.selected { border-color: var(--amber); background: var(--amber-soft); }
+  .letter {
+    flex: none; width: 28px; height: 28px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: .8rem; font-weight: 600;
+    border: 1px solid var(--line); color: var(--amber);
+  }
+  .option.selected .letter { background: var(--amber); color: #1b1410; border-color: var(--amber); }
+
+  .btn {
+    width: 100%; margin-top: 8px; padding: 15px 22px;
+    font: inherit; font-weight: 600; font-size: 1rem; letter-spacing: .02em;
+    color: #1b1410; background: var(--amber);
+    border: none; border-radius: 14px; cursor: pointer;
+    box-shadow: 0 0 30px rgba(232,176,100,.25);
+    transition: transform .15s, opacity .2s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+
+  .center { text-align: center; }
+  .score {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 4.5rem; font-weight: 600; margin: 4px 0 6px;
+  }
+  .pass { color: var(--good); }
+  .fail { color: var(--bad); }
+  .result-msg { color: #d9d2c5; line-height: 1.7; margin: 0; }
+  .hidden { display: none; }
+
+  /* ---------- Pass list ---------- */
+  .req { text-align: left; margin: 18px 0 0; padding: 0; list-style: none; }
+  .req li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; margin-bottom: 8px;
+    border: 1px solid var(--line); border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+  }
+  .req li::before {
+    content: "✓"; flex: none; width: 24px; height: 24px; border-radius: 50%;
+    display: grid; place-items: center; font-size: .8rem; font-weight: 700;
+    background: var(--amber); color: #1b1410;
+  }
+
+  /* ---------- Crying illustration ---------- */
+  .cry { width: 100%; max-width: 300px; margin: 6px auto 4px; display: block; }
+  .tear { stroke-dasharray: 7 6; animation: flow .7s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -13; } }
+  .shake { animation: sob 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
+  .shake.b { animation-delay: .35s; }
+  @keyframes sob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(2px); } }
+
+  /* ---------- Pitch ---------- */
+  .timer {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 3.4rem; font-weight: 600; color: var(--amber);
+    text-align: center; margin: 4px 0 14px; letter-spacing: .04em;
+  }
+  .timer.low { color: var(--bad); }
+  textarea {
+    width: 100%; min-height: 190px; resize: vertical;
+    padding: 14px 16px; font: inherit; font-size: 1rem; line-height: 1.6;
+    color: var(--ink); background: rgba(255,255,255,0.05);
+    border: 1px solid var(--line); border-radius: 14px; outline: none;
+  }
+  textarea:focus { border-color: var(--amber); }
+  textarea[readonly] { opacity: .7; }
+  .couch { width: 100%; max-width: 320px; margin: 6px auto 16px; display: block; border-radius: 16px; }
+  .heart { animation: floatUp 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes floatUp { 0% { transform: translateY(6px) scale(.8); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-14px) scale(1.05); opacity: 0; } }
+  .note { color: var(--muted); font-size: .9rem; text-align: center; margin: 12px 0 0; min-height: 1.2em; }
+</style>
+</head>
+<body>
+
+<!-- ===== Twilight forest scene ===== -->
+<div class="scene" aria-hidden="true">
+  <svg viewBox="0 0 1000 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1a2326"/>
+        <stop offset=".55" stop-color="#2b3a3b"/>
+        <stop offset="1" stop-color="#3b4a47"/>
+      </linearGradient>
+      <linearGradient id="fogGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#b8c4c0" stop-opacity="0"/>
+        <stop offset=".5" stop-color="#b8c4c0" stop-opacity=".22"/>
+        <stop offset="1" stop-color="#b8c4c0" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="spill" cx=".5" cy=".5" r=".5">
+        <stop offset="0" stop-color="#ffb85c" stop-opacity=".45"/>
+        <stop offset="1" stop-color="#ffb85c" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="lanternGlow" cx=".5" cy=".5" r=".5">
+        <stop offset="0" stop-color="#ffd38a" stop-opacity=".9"/>
+        <stop offset=".35" stop-color="#ffb85c" stop-opacity=".35"/>
+        <stop offset="1" stop-color="#ffb85c" stop-opacity="0"/>
+      </radialGradient>
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="7" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <rect width="1000" height="700" fill="url(#sky)"/>
+
+    <g id="pinesFar" fill="#4a5a56" opacity=".55"></g>
+    <rect class="fog slow" x="-100" y="380" width="1200" height="140" fill="url(#fogGrad)"/>
+    <g id="pinesMid" fill="#26332f" opacity=".9"></g>
+    <rect class="fog" x="-100" y="470" width="1200" height="120" fill="url(#fogGrad)"/>
+
+    <!-- ground -->
+    <rect x="0" y="655" width="1000" height="45" fill="#0e1513"/>
+    <ellipse cx="500" cy="660" rx="190" ry="40" fill="url(#spill)" class="flicker"/>
+
+    <!-- cabin -->
+    <g>
+      <polygon points="405,660 500,505 595,660" fill="#1d140f"/>
+      <polygon points="425,660 500,535 575,660" fill="#33241a"/>
+      <g filter="url(#glow)" class="flicker">
+        <polygon points="462,628 500,563 538,628" fill="#ffc46b"/>
+        <rect x="486" y="630" width="28" height="30" fill="#ffb85c"/>
+      </g>
+      <g stroke="#2a1d15" stroke-width="2.2">
+        <line x1="500" y1="563" x2="500" y2="628"/>
+        <line x1="476" y1="604" x2="524" y2="604"/>
+        <line x1="462" y1="628" x2="538" y2="628"/>
+      </g>
+      <rect x="395" y="656" width="210" height="6" fill="#140e0a"/>
+      <!-- lanterns -->
+      <g class="flicker">
+        <circle cx="440" cy="640" r="26" fill="url(#lanternGlow)"/>
+        <rect x="436" y="634" width="8" height="11" rx="2" fill="#ffd38a"/>
+        <circle cx="560" cy="640" r="26" fill="url(#lanternGlow)"/>
+        <rect x="556" y="634" width="8" height="11" rx="2" fill="#ffd38a"/>
+      </g>
+    </g>
+
+    <g id="pinesNear" fill="#0f1714"></g>
+    <rect class="fog slow" x="-100" y="600" width="1200" height="100" fill="url(#fogGrad)" opacity=".7"/>
+  </svg>
+</div>
+<canvas id="rain" aria-hidden="true"></canvas>
+
+<!-- ===== Quiz ===== -->
+<main class="wrap">
+  <div class="card">
+
+    <div id="start">
+      <div class="eyebrow">The Saturday Exam</div>
+      <h1>Happy Saturday</h1>
+      <p class="intro">You have made it through another week, well done. In order to unlock <strong>unlimited access to me</strong> this weekend, you are required to pass a short test with a minimum grade of <strong>6/10</strong>.<br><br>Good luck.</p>
+      <button class="btn" onclick="startQuiz()">Begin the test</button>
+    </div>
+
+    <div id="quiz" class="hidden">
+      <div class="progress-wrap"><div class="progress" id="progress"></div></div>
+      <div class="count" id="count"></div>
+      <p class="question" id="question"></p>
+      <div id="options"></div>
+      <button class="btn" id="nextBtn" disabled onclick="next()">Next</button>
+    </div>
+
+    <!-- PASS -->
+    <div id="passed" class="hidden center">
+      <div class="eyebrow">Access granted</div>
+      <h1>You passed</h1>
+      <div class="score pass" id="scorePass"></div>
+
+      <svg class="couch" id="couchArt" viewBox="0 0 300 190" xmlns="http://www.w3.org/2000/svg" aria-label="The two of us on the couch watching a movie">
+        <defs>
+          <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#2b3a3b"/>
+            <stop offset="1" stop-color="#4f605b"/>
+          </linearGradient>
+          <radialGradient id="tvGlow" cx=".5" cy=".5" r=".5">
+            <stop offset="0" stop-color="#9fc2c0" stop-opacity=".35"/>
+            <stop offset="1" stop-color="#9fc2c0" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="300" height="190" rx="16" fill="#121a1b"/>
+        <ellipse cx="150" cy="60" rx="130" ry="70" fill="url(#tvGlow)" class="flicker"/>
+        <!-- TV -->
+        <rect x="78" y="12" width="144" height="84" rx="5" fill="#0a0e0f" stroke="#2c3638" stroke-width="2"/>
+        <rect x="84" y="18" width="132" height="72" rx="2" fill="url(#screen)"/>
+        <g fill="#1c2724">
+          <path d="M92 90 L100 58 L108 90Z M104 90 L113 50 L122 90Z M178 90 L187 52 L196 90Z M192 90 L200 62 L208 90Z"/>
+        </g>
+        <rect x="84" y="66" width="132" height="10" fill="#c9d4d0" opacity=".14" class="fog"/>
+        <circle cx="150" cy="80" r="2.5" fill="#ffc46b"/>
+        <rect x="140" y="96" width="20" height="8" fill="#0a0e0f"/>
+        <rect x="118" y="103" width="64" height="4" rx="2" fill="#0a0e0f"/>
+        <!-- floating heart -->
+        <path class="heart" d="M150 104 C146 100 140 102 142 107 C143 110 150 114 150 114 C150 114 157 110 158 107 C160 102 154 100 150 104Z" fill="#e8857a"/>
+        <!-- Her (leaning on him) -->
+        <g transform="rotate(14 132 130)">
+          <path d="M106 140 Q110 124 132 123 Q154 124 158 140Z" fill="#c98a3c"/>
+          <circle cx="116" cy="96" r="11" fill="#24160f"/>
+          <circle cx="148" cy="96" r="11" fill="#24160f"/>
+          <ellipse cx="114" cy="112" rx="3" ry="5" fill="#8a5636"/>
+          <ellipse cx="150" cy="112" rx="3" ry="5" fill="#8a5636"/>
+          <circle cx="132" cy="110" r="18" fill="#24160f"/>
+        </g>
+        <!-- Him -->
+        <g>
+          <path d="M150 142 Q154 124 178 123 Q202 124 206 142Z" fill="#3f6b55"/>
+          <ellipse cx="158" cy="108" rx="3" ry="5" fill="#f0d0b2"/>
+          <ellipse cx="198" cy="108" rx="3" ry="5" fill="#f0d0b2"/>
+          <circle cx="178" cy="104" r="20" fill="#1b1b22"/>
+        </g>
+        <!-- Couch -->
+        <rect x="40" y="128" width="220" height="34" rx="14" fill="#3b2a20"/>
+        <rect x="28" y="134" width="30" height="48" rx="12" fill="#33241b"/>
+        <rect x="242" y="134" width="30" height="48" rx="12" fill="#33241b"/>
+        <rect x="50" y="154" width="200" height="26" rx="8" fill="#2c1f17"/>
+        <!-- popcorn -->
+        <path d="M234 128 Q234 140 246 140 Q258 140 258 128Z" fill="#b94a3a"/>
+        <g fill="#f3e6c8"><circle cx="238" cy="127" r="3.2"/><circle cx="244" cy="124" r="3.4"/><circle cx="250" cy="126" r="3.2"/><circle cx="255" cy="128" r="2.6"/><circle cx="247" cy="129" r="2.8"/></g>
+      </svg>
+
+      <p class="result-msg">Unlimited access unlocked for the weekend. You are required to provide the following:</p>
+      <ul class="req">
+        <li>Snacks</li>
+        <li>Drinks</li>
+        <li>Hugs</li>
+        <li>Pick a movie</li>
+        <li>Pick me up</li>
+      </ul>
+    </div>
+
+    <!-- FAIL -->
+    <div id="failed" class="hidden center">
+      <div class="eyebrow">Access denied</div>
+      <h1>You failed</h1>
+      <div class="score fail" id="scoreFail"></div>
+
+      <svg class="cry" viewBox="0 0 260 175" xmlns="http://www.w3.org/2000/svg" aria-label="Two anime characters crying together">
+        <!-- Girl -->
+        <g class="shake">
+          <g transform="rotate(7 85 110)">
+            <path d="M42 175 Q48 130 85 127 Q122 130 128 175Z" fill="#c98a3c"/>
+            <rect x="77" y="110" width="16" height="20" rx="4" fill="#74462c"/>
+            <circle cx="50" cy="44" r="21" fill="#24160f"/>
+            <circle cx="120" cy="44" r="21" fill="#24160f"/>
+            <ellipse cx="85" cy="80" rx="38" ry="40" fill="#8a5636"/>
+            <path d="M46 76 Q48 34 85 34 Q122 34 124 76 Q113 54 85 52 Q57 54 46 76Z" fill="#24160f"/>
+            <ellipse cx="62" cy="96" rx="7" ry="4" fill="#d9707a" opacity=".45"/>
+            <ellipse cx="108" cy="96" rx="7" ry="4" fill="#d9707a" opacity=".45"/>
+            <path d="M60 71 L77 65" stroke="#24160f" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M93 65 L110 71" stroke="#24160f" stroke-width="3.5" stroke-linecap="round"/>
+            <ellipse cx="70" cy="84" rx="8.5" ry="10.5" fill="#1a1212"/>
+            <ellipse cx="100" cy="84" rx="8.5" ry="10.5" fill="#1a1212"/>
+            <circle cx="72.5" cy="80" r="3.4" fill="#fff"/><circle cx="68" cy="88" r="1.6" fill="#fff"/>
+            <circle cx="102.5" cy="80" r="3.4" fill="#fff"/><circle cx="98" cy="88" r="1.6" fill="#fff"/>
+            <path d="M75 106 Q85 96 95 106 Q85 113 75 106Z" fill="#4a1e1e"/>
+            <path class="tear" d="M66 93 Q63 110 66 128" stroke="#8fd3ff" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path class="tear" d="M104 93 Q107 110 104 128" stroke="#8fd3ff" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </g>
+        </g>
+        <!-- Guy -->
+        <g class="shake b">
+          <g transform="rotate(-7 175 110)">
+            <path d="M132 175 Q138 130 175 127 Q212 130 218 175Z" fill="#3f6b55"/>
+            <rect x="167" y="110" width="16" height="20" rx="4" fill="#dcb595"/>
+            <ellipse cx="175" cy="80" rx="37" ry="40" fill="#f0d0b2"/>
+            <path d="M136 80 Q132 32 175 30 Q218 32 214 80 L208 62 L200 72 L192 56 L184 70 L175 54 L166 70 L158 56 L150 72 L142 62Z" fill="#1b1b22"/>
+            <ellipse cx="152" cy="96" rx="7" ry="4" fill="#e07a85" opacity=".45"/>
+            <ellipse cx="198" cy="96" rx="7" ry="4" fill="#e07a85" opacity=".45"/>
+            <path d="M151 74 L167 69" stroke="#1b1b22" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M183 69 L199 74" stroke="#1b1b22" stroke-width="3.5" stroke-linecap="round"/>
+            <ellipse cx="160" cy="86" rx="7.5" ry="9.5" fill="#1a1212"/>
+            <ellipse cx="190" cy="86" rx="7.5" ry="9.5" fill="#1a1212"/>
+            <circle cx="162.5" cy="82" r="3.2" fill="#fff"/><circle cx="158" cy="90" r="1.5" fill="#fff"/>
+            <circle cx="192.5" cy="82" r="3.2" fill="#fff"/><circle cx="188" cy="90" r="1.5" fill="#fff"/>
+            <path d="M165 107 Q175 97 185 107 Q175 114 165 107Z" fill="#4a1e1e"/>
+            <path class="tear" d="M156 94 Q153 111 156 129" stroke="#8fd3ff" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path class="tear" d="M194 94 Q197 111 194 129" stroke="#8fd3ff" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </g>
+        </g>
+      </svg>
+
+      <button class="btn" onclick="startPitch()">Click to get one more chance</button>
+    </div>
+
+    <!-- LAST CHANCE PITCH -->
+    <div id="pitch" class="hidden">
+      <div class="eyebrow">Last chance</div>
+      <h1>One more chance</h1>
+      <p class="intro" style="margin-bottom:10px">In order to still spend time with me this weekend, you have <strong>5 minutes</strong> to write a pitch convincing me why you should get to spend the weekend watching movies with me.</p>
+      <div class="timer" id="timer">5:00</div>
+      <textarea id="pitchText" placeholder="Start convincing me..."></textarea>
+      <button class="btn" id="sendBtn" disabled onclick="sendPitch()">Send my pitch</button>
+      <p class="note" id="pitchNote">You can send your pitch when the timer runs out. Send it to Shanice first, then you will see her verdict.</p>
+    </div>
+
+    <!-- PITCH ACCEPTED -->
+    <div id="accepted" class="hidden center">
+      <div class="eyebrow">Verdict</div>
+      <h1>Pitch accepted</h1>
+      <div id="couchSlot"></div>
+      <p class="result-msg">Thank you for sending your pitch. Your pitch has been accepted. You are required to provide the following:</p>
+      <ul class="req">
+        <li>Snacks</li>
+        <li>Drinks</li>
+        <li>Hugs</li>
+        <li>Pick a movie</li>
+        <li>Pick me up</li>
+      </ul>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  /* ---------- Pine trees ---------- */
+  let seed = 7;
+  function rand() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+
+  function pine(x, base, h, w) {
+    let d = "";
+    const tiers = 5;
+    for (let i = 0; i < tiers; i++) {
+      const top = base - h + i * h * 0.17;
+      const bottom = top + h * 0.3;
+      const half = w * (0.18 + i * 0.16);
+      d += `M${x},${top} L${x + half},${bottom} L${x - half},${bottom} Z `;
+    }
+    d += `M${x - w * 0.05},${base - h * 0.02} h${w * 0.1} v${h * 0.06} h${-w * 0.1} Z`;
+    return d;
+  }
+
+  function forest(id, count, baseMin, baseMax, hMin, hMax, avoid) {
+    const g = document.getElementById(id);
+    let d = "";
+    for (let i = 0; i < count; i++) {
+      const x = -40 + rand() * 1080;
+      if (avoid && x > avoid[0] && x < avoid[1]) continue;
+      const base = baseMin + rand() * (baseMax - baseMin);
+      const h = hMin + rand() * (hMax - hMin);
+      d += pine(x, base, h, h * 0.42);
+    }
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", d);
+    g.appendChild(p);
+  }
+
+  forest("pinesFar", 70, 470, 520, 160, 260);
+  forest("pinesMid", 45, 580, 640, 220, 340, [380, 620]);
+  forest("pinesNear", 14, 700, 720, 380, 560, [300, 700]);
+
+  /* ---------- Rain ---------- */
+  const cv = document.getElementById("rain");
+  const ctx = cv.getContext("2d");
+  let drops = [];
+  function resize() {
+    cv.width = innerWidth * devicePixelRatio;
+    cv.height = innerHeight * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    const n = Math.round(innerWidth * 0.35);
+    drops = Array.from({ length: n }, () => ({
+      x: Math.random() * innerWidth,
+      y: Math.random() * innerHeight,
+      l: 10 + Math.random() * 18,
+      v: 9 + Math.random() * 8,
+      o: 0.12 + Math.random() * 0.25
+    }));
+  }
+  function rain() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    ctx.lineWidth = 1;
+    for (const d of drops) {
+      ctx.strokeStyle = `rgba(190, 205, 210, ${d.o})`;
+      ctx.beginPath();
+      ctx.moveTo(d.x, d.y);
+      ctx.lineTo(d.x - d.l * 0.18, d.y + d.l);
+      ctx.stroke();
+      d.y += d.v; d.x -= d.v * 0.18;
+      if (d.y > innerHeight) { d.y = -20; d.x = Math.random() * (innerWidth + 100); }
+    }
+    requestAnimationFrame(rain);
+  }
+  addEventListener("resize", resize);
+  resize(); rain();
+
+  /* ---------- Quiz ---------- */
+  const questions = [
+    { q: "What year and month did I move to New Zealand?",
+      o: ["February 2023", "March 2023", "March 2022"], a: 1 },
+    { q: "What is my full name?",
+      o: ["Shanice Katharina Oghenefega Herms", "Shanice Katharina Ogheneovo Herms", "Shanice Katharina Oghenetega Herms"], a: 2 },
+    { q: "What is my favourite Korean food?",
+      o: ["Bossam", "Samgyeopsal", "Tteokbokki"], a: 1 },
+    { q: "What are my moon sign and rising sign?",
+      o: ["Moon in Aries, Gemini rising", "Moon in Gemini, Aries rising", "Moon in Aries, Leo rising"], a: 0 },
+    { q: "What is my brother's name?",
+      o: ["Morris", "Miles", "Maurice"], a: 2 },
+    { q: "Which country have I NOT been to?",
+      o: ["Belgium", "Italy", "Denmark"], a: 0 },
+    { q: "Who is my favourite BTS member?",
+      o: ["Kim Taehyung (V)", "Min Yoongi (Suga)", "Jeon Jungkook"], a: 1 },
+    { q: "Where is my first tattoo?",
+      o: ["Left arm", "Right arm", "Left wrist"], a: 0 },
+    { q: "What is my favourite country to travel to?",
+      o: ["Vietnam", "Thailand", "Indonesia"], a: 1 },
+    { q: "What is my favourite scent at the moment?",
+      o: ["Lavender", "Coconut", "Lemongrass"], a: 2 }
+  ];
+
+  const PASS_MARK = 6;
+  const letters = ["A", "B", "C"];
+  let current = 0, score = 0, selected = null;
+
+  function show(id) {
+    ["start", "quiz", "passed", "failed", "pitch", "accepted"].forEach(s =>
+      document.getElementById(s).classList.toggle("hidden", s !== id));
+  }
+
+  function startQuiz() { show("quiz"); render(); }
+
+  function render() {
+    const item = questions[current];
+    selected = null;
+    const btn = document.getElementById("nextBtn");
+    btn.disabled = true;
+    btn.textContent = current === questions.length - 1 ? "Submit" : "Next";
+    document.getElementById("count").textContent = "Question " + (current + 1) + " of " + questions.length;
+    document.getElementById("progress").style.width = (current / questions.length * 100) + "%";
+    document.getElementById("question").textContent = item.q;
+    const box = document.getElementById("options");
+    box.innerHTML = "";
+    item.o.forEach((text, i) => {
+      const b = document.createElement("button");
+      b.className = "option";
+      b.innerHTML = '<span class="letter">' + letters[i] + '</span><span></span>';
+      b.lastChild.textContent = text;
+      b.onclick = () => {
+        selected = i;
+        [...box.children].forEach(c => c.classList.remove("selected"));
+        b.classList.add("selected");
+        btn.disabled = false;
+      };
+      box.appendChild(b);
+    });
+  }
+
+  function next() {
+    if (selected === null) return;
+    if (selected === questions[current].a) score++;
+    current++;
+    current < questions.length ? render() : finish();
+  }
+
+  function finish() {
+    const passed = score >= PASS_MARK;
+    document.getElementById(passed ? "scorePass" : "scoreFail").textContent = score + "/10";
+    show(passed ? "passed" : "failed");
+    scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /* ---------- Last-chance pitch ---------- */
+  let timeLeft = 300, sentStep = false, timerId = null;
+
+  function startPitch() {
+    show("pitch");
+    scrollTo({ top: 0, behavior: "smooth" });
+    document.getElementById("pitchText").focus();
+    tick();
+    timerId = setInterval(tick, 1000);
+  }
+
+  function tick() {
+    const t = document.getElementById("timer");
+    const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+    t.textContent = m + ":" + String(s).padStart(2, "0");
+    t.classList.toggle("low", timeLeft <= 60);
+    if (timeLeft <= 0) {
+      clearInterval(timerId);
+      t.textContent = "Time's up";
+      document.getElementById("pitchText").readOnly = true;
+      document.getElementById("sendBtn").disabled = false;
+      document.getElementById("pitchNote").textContent = "Pens down. Send your pitch to Shanice first, then you will see her verdict.";
+      return;
+    }
+    timeLeft--;
+  }
+
+  function showAccepted() {
+    const slot = document.getElementById("couchSlot");
+    if (!slot.firstChild) slot.appendChild(document.getElementById("couchArt").cloneNode(true));
+    show("accepted");
+    scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function sendPitch() {
+    const box = document.getElementById("pitchText");
+    const note = document.getElementById("pitchNote");
+    const btn = document.getElementById("sendBtn");
+    if (sentStep) { showAccepted(); return; }
+    if (!box.value.trim()) { note.textContent = "You can't send an empty pitch! Send Shanice something anyway."; }
+    const text = "My pitch for the weekend:\n\n" + (box.value.trim() || "(I ran out of time...)");
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+        showAccepted();
+        return;
+      }
+    } catch (e) { /* share cancelled, fall back to copy */ }
+    try {
+      await navigator.clipboard.writeText(text);
+      note.textContent = "Copied! Paste it in a message to Shanice first, then tap the button.";
+    } catch (e) {
+      box.readOnly = false;
+      box.select();
+      note.textContent = "Copy your pitch and send it to Shanice first, then tap the button.";
+    }
+    sentStep = true;
+    btn.textContent = "I've sent it to Shanice";
+  }
+</script>
+</body>
+</html>
